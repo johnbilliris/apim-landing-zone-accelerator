@@ -1,299 +1,185 @@
-param apimCSVNetNameAddressPrefix string = '10.2.0.0/16'
+@description('Whether to use an existing virtual network.')
+param useExistingVirtualNetwork bool = false
 
-param appGatewayAddressPrefix string = '10.2.4.0/24'
-param apimAddressPrefix string = '10.2.7.0/24'
-param privateEndpointAddressPrefix string = '10.2.5.0/24'
-param deploymentAddressPrefix string = '10.2.8.0/24'
+@description('Whether to use existing virtual network subnets.')
+param useExistingVirtualNetworkSubnets bool = false
 
-param location string
+@description('Required. The Virtual Network (vNet) Name.')
+param virtualNetworkName string
 
-@description('Standardized suffix text to be added to resource names')
-param resourceSuffix string
+@description('Required. An Array of 1 or more IP Address Prefixes for the Virtual Network.')
+param vNetAddressPrefixes array
 
-// Variables
-var owner = 'APIM Const Set'
+@description('Location.')
+param location string = resourceGroup().location
 
-var apimCSVNetName = 'vnet-apim-cs-${resourceSuffix}'
+@description('Tags to be applied to the resource')
+param tags object
 
-var appGatewaySubnetName = 'snet-apgw-${resourceSuffix}'
-var apimSubnetName = 'snet-apim-${resourceSuffix}'
+@description('Required. The subnet properties.')
+param subnets array
 
-var appGatewaySNNSG = 'nsg-apgw-${resourceSuffix}'
-var apimSNNSG = 'nsg-apim-${resourceSuffix}'
+@description('An array of Diagnostic Settings to be applied to the virtual network.')
+param diagnosticSettings array = []
 
-var privateEndpointSubnetName = 'snet-prep-${resourceSuffix}'
-var privateEndpointSNNSG = 'nsg-prep-${resourceSuffix}'
+@description('Deploy Private DNS Zones for Private Endpoints.')
+param deployDns bool = false
 
-var deploymentSubnetName = 'snet-deploy-${resourceSuffix}'
 
-var appGatewayPublicIpName = 'pip-appgw-${resourceSuffix}'
+@description('Private DNS zone name for Key Vault.')
+#disable-next-line no-hardcoded-env-urls
+var keyVaultPrivateDnsZoneName = 'privatelink.vaultcore.azure.net'
 
-// Resources - VNet - SubNets
-resource vnetApimCs 'Microsoft.Network/virtualNetworks@2021-02-01' = {
-  name: apimCSVNetName
+@description('Private DNS zone name for Azure Monitor.')
+#disable-next-line no-hardcoded-env-urls
+var monitorPrivateDnsZoneName = 'privatelink.monitor.azure.com'
+
+@description('Private DNS zone name for Event Hub.')
+#disable-next-line no-hardcoded-env-urls
+var eventHubPrivateDnsZoneName = 'privatelink.servicebus.windows.net'
+
+@description('Private DNS zone name for SQL Database.')
+#disable-next-line no-hardcoded-env-urls
+var sqlDbPrivateDnsZoneName = 'privatelink.database.azure.com'
+
+@description('Private DNS zone name for Storage Blob.')
+#disable-next-line no-hardcoded-env-urls
+var storageBlobPrivateDnsZoneName = 'privatelink.blob.core.windows.net'
+
+@description('Private DNS zone name for Storage File.')
+#disable-next-line no-hardcoded-env-urls
+var storageFilePrivateDnsZoneName = 'privatelink.file.core.windows.net'
+
+@description('Private DNS zone name for Storage Table.')
+#disable-next-line no-hardcoded-env-urls
+var storageTablePrivateDnsZoneName = 'privatelink.table.core.windows.net'
+
+@description('Private DNS zone name for Storage Queue.')
+#disable-next-line no-hardcoded-env-urls
+var storageQueuePrivateDnsZoneName = 'privatelink.queue.core.windows.net'
+
+@description('Private DNS zone name for Event Grid.')
+#disable-next-line no-hardcoded-env-urls
+var eventGridPrivateDnsZoneName = 'privatelink.eventgrid.azure.net'
+
+@description('Private DNS zone name for Service Bus.')
+#disable-next-line no-hardcoded-env-urls
+var serviceBusPrivateDnsZoneName = 'privatelink.servicebus.windows.net'
+
+@description('Array of all private DNS zone names to deploy.')
+var privateDnsZoneNames = [
+  keyVaultPrivateDnsZoneName
+  monitorPrivateDnsZoneName
+  eventHubPrivateDnsZoneName 
+  sqlDbPrivateDnsZoneName
+  storageBlobPrivateDnsZoneName
+  storageFilePrivateDnsZoneName
+  storageTablePrivateDnsZoneName
+  storageQueuePrivateDnsZoneName
+  eventGridPrivateDnsZoneName
+]
+
+resource virtualNetworkExisting 'Microsoft.Network/virtualNetworks@2025-01-01' existing = if (useExistingVirtualNetwork)  {
+  name: virtualNetworkName
+}
+
+resource virtualNetworkNew 'Microsoft.Network/virtualNetworks@2025-01-01' = if (!useExistingVirtualNetwork) {
+  name: virtualNetworkName
   location: location
-  tags: {
-    Owner: owner
-  }
+  tags: tags
   properties: {
+    privateEndpointVNetPolicies: 'Disabled'
     addressSpace: {
-      addressPrefixes: [
-        apimCSVNetNameAddressPrefix
+      addressPrefixes: vNetAddressPrefixes
+    }
+    subnets: [for item in (useExistingVirtualNetworkSubnets ? [] : subnets): {
+      name: item.name
+      properties: {
+        addressPrefix: item.addressPrefix
+        networkSecurityGroup: (empty(item.networkSecurityGroupName) ? null : json('{"id": "${resourceId('Microsoft.Network/networkSecurityGroups', item.networkSecurityGroupName)}"}'))
+        privateEndpointNetworkPolicies: empty(item.privateEndpointNetworkPolicies) ? null : item.privateEndpointNetworkPolicies
+        privateLinkServiceNetworkPolicies: empty(item.privateLinkServiceNetworkPolicies) ? null : item.privateLinkServiceNetworkPolicies
+        serviceEndpoints: empty(item.serviceEndpoints) ? null : item.serviceEndpoints
+        routeTable: empty(item.routeTableName) ? null : json('{"id": "${resourceId('Microsoft.Network/routeTables', item.routeTableName)}"}')
+        delegations: empty(item.delegations) ? null : item.delegations
+      }
+    }]
+  }
+}
+
+resource virtualNetwork_diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = [
+  for (diagnosticSetting, index) in ( !useExistingVirtualNetwork ? diagnosticSettings ?? [] : []): {
+    name: '${diagnosticSetting.?namePrefix}${virtualNetworkName}-${diagnosticSetting.?destinationSuffix}'
+    properties: {
+      workspaceId: diagnosticSetting.?workspaceResourceId
+      metrics: [
+        for group in (diagnosticSetting.?metricCategories ?? [{ category: 'AllMetrics' }]): {
+          category: group.category
+          enabled: group.?enabled ?? true
+          timeGrain: null
+        }
+      ]
+      logs: [
+        for group in (diagnosticSetting.?logCategoriesAndGroups ?? [{ categoryGroup: 'allLogs' }]): {
+          categoryGroup: group.?categoryGroup
+          category: group.?category
+          enabled: group.?enabled ?? true
+        }
       ]
     }
-    enableVmProtection: false
-    enableDdosProtection: false
-    subnets: [
-      {
-        name: appGatewaySubnetName
-        properties: {
-          addressPrefix: appGatewayAddressPrefix
-          networkSecurityGroup: {
-            id: appGatewayNSG.id
-          }
-        }
-      }
-      {
-        name: apimSubnetName
-        properties: {
-          addressPrefix: apimAddressPrefix
-          networkSecurityGroup: {
-            id: apimNSG.id
-          }
-        }
-      }
-      {
-        name: privateEndpointSubnetName
-        properties: {
-          addressPrefix: privateEndpointAddressPrefix
-          networkSecurityGroup: {
-            id: privateEndpointNSG.id
-          }
-          privateEndpointNetworkPolicies: 'Disabled'
-        }
-      }
-      {
-        name: deploymentSubnetName
-        properties: {
-          addressPrefix: deploymentAddressPrefix
-          serviceEndpoints: [
-            {
-              service: 'Microsoft.Storage'
-            }
-          ]
-          delegations: [
-            {
-              name: 'Microsoft.ContainerInstance.containerGroups'
-              properties: {
-                serviceName: 'Microsoft.ContainerInstance/containerGroups'
-              }
-            }
-          ]
-        }
-      }
-    ]
+    scope:  virtualNetworkNew
   }
-}
+]
 
-// Network Security Groups (NSG)
-
-resource appGatewayNSG 'Microsoft.Network/networkSecurityGroups@2020-06-01' = {
-  name: appGatewaySNNSG
-  location: location
-  properties: {
-    securityRules: [
-      {
-        name: 'AllowHealthProbes'
-        properties: {
-          protocol: '*'
-          sourcePortRange: '*'
-          destinationPortRange: '65200-65535'
-          sourceAddressPrefix: 'GatewayManager'
-          destinationAddressPrefix: '*'
-          access: 'Allow'
-          priority: 100
-          direction: 'Inbound'
-        }
-      }
-      {
-        name: 'AllowClientTrafficToSubnet'
-        properties: {
-          protocol: 'Tcp'
-          sourcePortRange: '*'
-          destinationPortRanges: ['80', '443']
-          sourceAddressPrefix: '*'
-          destinationAddressPrefix: appGatewayAddressPrefix
-          access: 'Allow'
-          priority: 110
-          direction: 'Inbound'
-        }
-      }
-      {
-        name: 'AllowClientTrafficToFrontendIP'
-        properties: {
-          protocol: 'Tcp'
-          sourcePortRange: '*'
-          destinationPortRanges: ['80', '443']
-          sourceAddressPrefix: '*'
-          destinationAddressPrefix: '${pipAppGw.properties.ipAddress}/32'
-          access: 'Allow'
-          priority: 111
-          direction: 'Inbound'
-        }
-      }
-      {
-        name: 'AllowAzureLoadBalancer'
-        properties: {
-          protocol: '*'
-          sourcePortRange: '*'
-          destinationPortRange: '*'
-          sourceAddressPrefix: 'AzureLoadBalancer'
-          destinationAddressPrefix: '*'
-          access: 'Allow'
-          priority: 120
-          direction: 'Inbound'
-        }
-      }
-    ]
+module dnsDeployment '../shared/modules/dnszone.bicep' = [for privateDnsZoneName in privateDnsZoneNames: if (deployDns) {
+  name: 'dns-deployment-${privateDnsZoneName}'
+  scope: resourceGroup()
+  dependsOn: [
+    virtualNetworkNew
+    virtualNetworkExisting
+  ] 
+  params: {
+    vnetName: virtualNetworkName
+    networkingResourceGroupName: resourceGroup().name
+    domain: privateDnsZoneName
+    tags: tags
   }
-}
+}]
 
-resource apimNSG 'Microsoft.Network/networkSecurityGroups@2020-06-01' = {
-  name: apimSNNSG
-  location: location
-  properties: {
-    securityRules: [
-      {
-        name: 'AllowApimManagement'
-        properties: {
-          priority: 2000
-          sourceAddressPrefix: 'ApiManagement'
-          protocol: 'Tcp'
-          destinationPortRange: '3443'
-          access: 'Allow'
-          direction: 'Inbound'
-          sourcePortRange: '*'
-          destinationAddressPrefix: 'VirtualNetwork'
-        }
-      }
-      {
-        name: 'AllowAzureLoadBalancer'
-        properties: {
-          priority: 2010
-          sourceAddressPrefix: 'AzureLoadBalancer'
-          protocol: 'Tcp'
-          destinationPortRange: '6390'
-          access: 'Allow'
-          direction: 'Inbound'
-          sourcePortRange: '*'
-          destinationAddressPrefix: 'VirtualNetwork'
-        }
-      }
-      {
-        name: 'AllowAzureTrafficManager'
-        properties: {
-          priority: 2020
-          sourceAddressPrefix: 'AzureTrafficManager'
-          protocol: 'Tcp'
-          destinationPortRange: '443'
-          access: 'Allow'
-          direction: 'Inbound'
-          sourcePortRange: '*'
-          destinationAddressPrefix: 'VirtualNetwork'
-        }
-      }
-      {
-        name: 'AllowStorage'
-        properties: {
-          priority: 2000
-          sourceAddressPrefix: 'VirtualNetwork'
-          protocol: 'Tcp'
-          destinationPortRange: '443'
-          access: 'Allow'
-          direction: 'Outbound'
-          sourcePortRange: '*'
-          destinationAddressPrefix: 'Storage'
-        }
-      }
-      {
-        name: 'AllowSql'
-        properties: {
-          priority: 2010
-          sourceAddressPrefix: 'VirtualNetwork'
-          protocol: 'Tcp'
-          destinationPortRange: '1433'
-          access: 'Allow'
-          direction: 'Outbound'
-          sourcePortRange: '*'
-          destinationAddressPrefix: 'SQL'
-        }
-      }
-      {
-        name: 'AllowKeyVault'
-        properties: {
-          priority: 2020
-          sourceAddressPrefix: 'VirtualNetwork'
-          protocol: 'Tcp'
-          destinationPortRange: '443'
-          access: 'Allow'
-          direction: 'Outbound'
-          sourcePortRange: '*'
-          destinationAddressPrefix: 'AzureKeyVault'
-        }
-      }
-      {
-        name: 'AllowMonitor'
-        properties: {
-          priority: 2030
-          sourceAddressPrefix: 'VirtualNetwork'
-          protocol: 'Tcp'
-          destinationPortRanges: ['1886', '443']
-          access: 'Allow'
-          direction: 'Outbound'
-          sourcePortRange: '*'
-          destinationAddressPrefix: 'AzureMonitor'
-        }
-      }
-    ]
+output id string = useExistingVirtualNetwork ? virtualNetworkExisting.id : virtualNetworkNew.id
+output name string = virtualNetworkName
+output location string = location
+output resourceGroupName string = resourceGroup().name
+output keyVaultPrivateDnsZoneName string = keyVaultPrivateDnsZoneName
+output monitorPrivateDnsZoneName string = monitorPrivateDnsZoneName
+output eventHubPrivateDnsZoneName string = eventHubPrivateDnsZoneName
+output sqlDbPrivateDnsZoneName string = sqlDbPrivateDnsZoneName
+output storageBlobPrivateDnsZoneName string = storageBlobPrivateDnsZoneName
+output storageFilePrivateDnsZoneName string = storageFilePrivateDnsZoneName
+output storageTablePrivateDnsZoneName string = storageTablePrivateDnsZoneName
+output storageQueuePrivateDnsZoneName string = storageQueuePrivateDnsZoneName
+output eventGridPrivateDnsZoneName string = eventGridPrivateDnsZoneName
+output serviceBusPrivateDnsZoneName string = serviceBusPrivateDnsZoneName
+
+@description('The resource IDs of the deployed subnets.')
+output deployedSubnets array = [
+  for (subnet, index) in (subnets ?? []): { 
+    #disable-next-line BCP318
+    name: useExistingVirtualNetwork ? virtualNetworkExisting.properties.subnets[index].name : virtualNetworkNew.properties.subnets[index].name
+    #disable-next-line BCP318
+    resourceId: useExistingVirtualNetwork ? virtualNetworkExisting.properties.subnets[index].id : virtualNetworkNew.properties.subnets[index].id
   }
-}
+]
 
-resource privateEndpointNSG 'Microsoft.Network/networkSecurityGroups@2020-06-01' = {
-  name: privateEndpointSNNSG
-  location: location
-  properties: {
-    securityRules: []
+@description('Service Bus private DNS zone array for output.')
+var serviceBusPrivateDnsZone = [{ name: serviceBusPrivateDnsZoneName, resourceId: deployDns ? resourceId('Microsoft.Network/privateDnsZones', serviceBusPrivateDnsZoneName) : null }]
+@description('Array of deployed private DNS zones with resource IDs.')
+var deployedDnsZones_ array = [
+  for (privateDnsZoneName,index) in privateDnsZoneNames:{
+    name: privateDnsZoneName
+    resourceId: deployDns ? resourceId('Microsoft.Network/privateDnsZones', privateDnsZoneName) : null
   }
-}
+]
 
-// Public IP 
-resource pipAppGw 'Microsoft.Network/publicIPAddresses@2023-04-01' = {
-  name: appGatewayPublicIpName
-  location: location
-  sku: {
-    name: 'Standard'
-  }
-  zones: ['1', '2', '3']
-  properties: {
-    publicIPAddressVersion: 'IPv4'
-    publicIPAllocationMethod: 'Static'
-  }
-}
+output deployedDnsZones array = union(serviceBusPrivateDnsZone, deployedDnsZones_)
 
-// Output section
-output apimCSVNetName string = apimCSVNetName
-output apimCSVNetId string = vnetApimCs.id
-
-output appGatewaySubnetName string = appGatewaySubnetName
-output apimSubnetName string = apimSubnetName
-output privateEndpointSubnetName string = privateEndpointSubnetName
-
-output appGatewaySubnetid string = '${vnetApimCs.id}/subnets/${appGatewaySubnetName}'
-output apimSubnetid string = '${vnetApimCs.id}/subnets/${apimSubnetName}'
-output privateEndpointSubnetid string = '${vnetApimCs.id}/subnets/${privateEndpointSubnetName}'
-
-output deploymentSubnetId string = '${vnetApimCs.id}/subnets/${deploymentSubnetName}'
-output deploymentSubnetName string = deploymentSubnetName
-
-output publicIpAppGw string = pipAppGw.id
-output appGatewayPublicIpName string = appGatewayPublicIpName
