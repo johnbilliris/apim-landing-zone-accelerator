@@ -159,112 +159,56 @@ module hub './hub.bicep' = {
   }
 }
 
-// var firewallRoute = {
-//         name: 'DefaultRoute'
-//         properties: {
-//           addressPrefix: '0.0.0.0/0'
-//           nextHopType: 'VirtualAppliance'
-//           nextHopIpAddress: hub.outputs.azureFirewallPrivateIp
-//         }
-//       }
+var firewallRoute = {
+        name: 'DefaultRoute'
+        properties: {
+          addressPrefix: '0.0.0.0/0'
+          nextHopType: 'VirtualAppliance'
+          nextHopIpAddress: hub.outputs.azureFirewallPrivateIp
+        }
+      }
 
-// module spoke './spoke.bicep' = {
-//   name: 'spokeResourcesDeployment'
-//   scope: subscription(spokeSubscriptionId)
-//   params: {
-//     location: location
-//     networkingResourceGroupName: resourceNames.outputs.spoke.networkingResourceGroupName
-//     sharedResourceGroupName: resourceNames.outputs.spoke.sharedResourceGroupName
-//     aseResourceGroupName: resourceNames.outputs.spoke.aseResourceGroupName
-//     tags: resourceNames.outputs.tags
-//     deploySample: resourceNames.outputs.deploySample
-//     virtualNetworkName: resourceNames.outputs.spoke.virtualNetworkName
-//     vNetAddressPrefixes: resourceNames.outputs.spoke.virtualNetworkAddressPrefixes
-//     subnets: resourceNames.outputs.spoke.virtualNetworkSubnets
-//     firewallRoute: firewallRoute
-//     privateEndpointSubnetName: resourceNames.outputs.spoke.privateEndpointSubnetName
-//     privateEndpointNsgName: resourceNames.outputs.spoke.privateEndpointNsgName
-//     aseRouteTableName: resourceNames.outputs.spoke.aseRouteTableName
-//     appSubnetName: resourceNames.outputs.spoke.appSubnetName
-//     appNsgName: resourceNames.outputs.spoke.appNsgName
-//     aseName: resourceNames.outputs.spoke.aseName
-//     dedicatedHostCount: resourceNames.outputs.spoke.dedicatedHostCount
-//     zoneRedundant: resourceNames.outputs.spoke.zoneRedundantAse
-//     keyVaultName: resourceNames.outputs.spoke.keyVaultName
-//     keyVaultPrivateEndpointName: resourceNames.outputs.spoke.keyVaultPrivateEndpointName
-//     keyVaultPrivateEndpointNetworkInterfaceName: resourceNames.outputs.spoke.keyVaultPrivateEndpointNetworkInterfaceName
-//     logAnalyticsWorkspaceId: lawLogAnalyticsWorkspace.id
-//     logAnalyticsDiagnosticSettings: logAnalyticsDiagnosticSettings
-//     applicationInsightsConnectionString: applicationInsightsConnectionString
-//     eventGridName: resourceNames.outputs.spoke.eventGridName
-//     eventGridPrivateEndpointName: resourceNames.outputs.spoke.eventGridPrivateEndpointName
-//     eventGridPrivateEndpointNetworkInterfaceName: resourceNames.outputs.spoke.eventGridPrivateEndpointNetworkInterfaceName
-//     serviceBusName: resourceNames.outputs.spoke.serviceBusName
-//     serviceBusSku: resourceNames.outputs.spoke.serviceBusSku
-//     serviceBusCapacity: resourceNames.outputs.spoke.serviceBusCapacity
-//     serviceBusPrivateEndpointName: resourceNames.outputs.spoke.serviceBusPrivateEndpointName
-//     serviceBusPrivateEndpointNetworkInterfaceName: resourceNames.outputs.spoke.serviceBusPrivateEndpointNetworkInterfaceName
-//     storageAccountName: resourceNames.outputs.spoke.storageAccountName
-//     storageAccountPrivateEndpointName: resourceNames.outputs.spoke.storageAccountPrivateEndpointName
-//     storageAccountPrivateEndpointNetworkInterfaceName: resourceNames.outputs.spoke.storageAccountPrivateEndpointNetworkInterfaceName
-
-//     virtualMachineName : resourceNames.outputs.spoke.virtualMachineName
-//     virtualMachineResourceGroupName : resourceNames.outputs.spoke.virtualMachineResourceGroupName
-//     virtualMachineSubnetName : resourceNames.outputs.spoke.virtualMachineSubnetName
-//   }
-// }
-
-// ------------------------------------------------------------------------------------------
-// Hub–Spoke VNet Peering (delegated modules at RG scope)
-// ------------------------------------------------------------------------------------------
-// var resourceAbbreviations = loadJsonContent('abbreviations.json')
-// var shortenedLocation = toLower(location) == 'australiaeast' ? 'ae-' : 'as-'
-// var resourceSuffix = '${shortenedLocation}${workloadName}-${environment}-'
-// var hubVnetRg = '${resourceAbbreviations.resourcesResourceGroups}${shortenedLocation}connect-network-01'
-
-// var spokeVnetRg = '${resourceAbbreviations.resourcesResourceGroups}${resourceSuffix}network-01'
-
-// module hubToSpokePeering 'shared/modules/vnetPeering.bicep' = {
-//   name: 'hubToSpokePeering'
-//   scope: resourceGroup(hubSubscriptionId, hubVnetRg)
-//   params: {
-//     vnetName: resourceNames.outputs.hub.network.virtualNetworkName
-//     peeringName: 'HubToSpoke'
-//     remoteVnetId: spoke.outputs.virtualNetworkId
-//   }
-// }
-
-// module spokeToHubPeering 'shared/modules/vnetPeering.bicep' = {
-//   name: 'spokeToHubPeering'
-//   scope: resourceGroup(spokeSubscriptionId, spokeVnetRg)
-//   params: {
-//     vnetName: spoke.outputs.virtualNetworkName
-//     peeringName: 'SpokeToHub'
-//     remoteVnetId: hub.outputs.hubVirtualNetworkId
-//   }
-// }
-
-
-
-
-
-
-
+module spoke './spoke.bicep' = {
+  name: 'spokeResourcesDeployment'
+  scope: subscription(spokeSubscriptionId)
+  params: {
+    location: location
+    networkingResourceGroupName: resourceNames.outputs.spoke.networkingResourceGroupName
+    sharedResourceGroupName: resourceNames.outputs.spoke.sharedResourceGroupName
+    aseResourceGroupName: resourceNames.outputs.spoke.aseResourceGroupName
+    tags: resourceNames.outputs.tags
+    deploySample: resourceNames.outputs.deploySample
+    virtualNetworkName: resourceNames.outputs.spoke.virtualNetworkName
+    vNetAddressPrefixes: resourceNames.outputs.spoke.virtualNetworkAddressPrefixes
+    subnets: resourceNames.outputs.spoke.virtualNetworkSubnets
+    firewallRoute: firewallRoute
+    privateEndpointSubnetName: resourceNames.outputs.spoke.privateEndpointSubnetName
+    privateEndpointNsgName: resourceNames.outputs.spoke.privateEndpointNsgName
+    aseRouteTableName: resourceNames.outputs.spoke.aseRouteTableName
+    appSubnetName: resourceNames.outputs.spoke.appSubnetName
+    appNsgName: resourceNames.outputs.spoke.appNsgName
+    aseName: resourceNames.outputs.spoke.aseName
+    dedicatedHostCount: resourceNames.outputs.spoke.dedicatedHostCount
+    zoneRedundant: resourceNames.outputs.spoke.zoneRedundantAse
+    keyVaultName: resourceNames.outputs.spoke.keyVaultName
+    keyVaultPrivateEndpointName: resourceNames.outputs.spoke.keyVaultPrivateEndpointName
+    keyVaultPrivateEndpointNetworkInterfaceName: resourceNames.outputs.spoke.keyVaultPrivateEndpointNetworkInterfaceName
+    logAnalyticsWorkspaceId: lawLogAnalyticsWorkspace.id
+    logAnalyticsDiagnosticSettings: logAnalyticsDiagnosticSettings
+    applicationInsightsConnectionString: applicationInsightsConnectionString
+    eventGridName: resourceNames.outputs.spoke.eventGridName
+    eventGridPrivateEndpointName: resourceNames.outputs.spoke.eventGridPrivateEndpointName
+    eventGridPrivateEndpointNetworkInterfaceName: resourceNames.outputs.spoke.eventGridPrivateEndpointNetworkInterfaceName
+    serviceBusName: resourceNames.outputs.spoke.serviceBusName
+    serviceBusSku: resourceNames.outputs.spoke.serviceBusSku
+    serviceBusCapacity: resourceNames.outputs.spoke.serviceBusCapacity
+    serviceBusPrivateEndpointName: resourceNames.outputs.spoke.serviceBusPrivateEndpointName
+    serviceBusPrivateEndpointNetworkInterfaceName: resourceNames.outputs.spoke.serviceBusPrivateEndpointNetworkInterfaceName
+    storageAccountName: resourceNames.outputs.spoke.storageAccountName
+    storageAccountPrivateEndpointName: resourceNames.outputs.spoke.storageAccountPrivateEndpointName
+    storageAccountPrivateEndpointNetworkInterfaceName: resourceNames.outputs.spoke.storageAccountPrivateEndpointNetworkInterfaceName
+  }
+}
 
 output hub object = resourceNames.outputs.hub
 output spoke object = resourceNames.outputs.spoke
-
-// // output sharedResourceGroupName string = sharedResourceGroupName
-// // output apimResourceGroupName string = apimResourceGroupName
-// // output apimName string = apimName
-// // output apimIdentityName string = apimModule.outputs.apimIdentityName
-// // output vnetId string = networking.outputs.apimCSVNetId
-// // output vnetName string = networking.outputs.apimCSVNetName
-// // output privateEndpointSubnetid string = networking.outputs.privateEndpointSubnetid
-// // output deploymentIdentityName string = shared.outputs.deploymentIdentityName
-// // output deploymentSubnetId string = networking.outputs.deploymentSubnetId
-// // output deploymentStorageName string = shared.outputs.deploymentStorageName
-// // output keyVaultName string = shared.outputs.keyVaultName
-// // output appGatewayName string = appGatewayName
-// // output appGatewayPublicIpAddress string = appgwModule.outputs.appGatewayPublicIpAddress
-

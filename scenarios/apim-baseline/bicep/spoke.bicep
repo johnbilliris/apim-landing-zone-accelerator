@@ -109,15 +109,6 @@ param storageAccountPrivateEndpointName string
 param storageAccountPrivateEndpointNetworkInterfaceName string
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Virtual Machine
-@description('Name of the virtual machine resource.')
-param virtualMachineName string
-@description('Name of the resource group for the virtual machine.')
-param virtualMachineResourceGroupName string
-@description('Name of the subnet for the virtual machine.')
-param virtualMachineSubnetName string = 'AzureBastionSubnet'
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Variables
 
 
@@ -137,12 +128,6 @@ resource sharedResourceGroup 'Microsoft.Resources/resourceGroups@2025-04-01' = {
 
 resource aseResourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
   name: aseResourceGroupName
-  location: location
-  tags: tags
-}
-
-resource computeResourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
-  name: virtualMachineResourceGroupName
   location: location
   tags: tags
 }
@@ -513,20 +498,6 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.29.0' = {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-@description('Resource ID of the subnet for the virtual machine.')
-var vmSubnetId = filter(networking.outputs.deployedSubnets, subnet => subnet.name == virtualMachineSubnetName)[0].resourceId  
-module vm './compute/virtualmachine.bicep' = {
-  name: 'virtualMachineDeployment'
-  scope: computeResourceGroup
-  params: {
-    vmName: virtualMachineName
-    location: location
-    subnetId: vmSubnetId
-    adminUsername: 'azureuser'
-    adminPassword: 'P@ssw0rd1234!'
-    tags: tags
-  }
-}
 
 output virtualNetworkId string = networking.outputs.id
 output virtualNetworkName string = networking.outputs.name

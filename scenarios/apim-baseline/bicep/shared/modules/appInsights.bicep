@@ -22,4 +22,5 @@ resource applicationInsight 'Microsoft.Insights/components@2020-02-02' existing 
 }
 
 output id string = hasApplicationInsights ? applicationInsight.id : ''
+#disable-next-line BCP318
 output connectionString string = hasApplicationInsights ? applicationInsight.properties.ConnectionString : ''

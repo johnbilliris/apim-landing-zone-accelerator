@@ -154,6 +154,7 @@ param logAnalyticsWorkspaceId string
 param logAnalyticsDiagnosticSettings array = []
 
 @description('The Sentinel Log Analytics workspace.')
+#disable-next-line no-unused-params
 param sentinelLogAnalyticsWorkspaceId string
 
 @description('An array of Diagnostic Settings to be applied to resources for Sentinel.')

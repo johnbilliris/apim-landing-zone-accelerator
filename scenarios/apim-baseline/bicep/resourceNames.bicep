@@ -285,7 +285,6 @@ output spoke object = {
   virtualNetworkAddressPrefixes : [
     '172.17.0.0/16'
   ]
-
   virtualNetworkSubnets : [
     {
       name: '${resourceAbbreviations.networkVirtualNetworksSubnets}${resourceSuffix}${resourceAbbreviations.webSitesAppServiceEnvironment}01'
@@ -331,16 +330,6 @@ output spoke object = {
       routeTableName: null
       delegations: null
     }
-    {
-      name: 'snet-compute'
-      addressPrefix: '172.17.37.0/26'
-      privateEndpointNetworkPolicies: 'Disabled'
-      privateLinkServiceNetworkPolicies: 'Enabled'
-      serviceEndpoints: null
-      networkSecurityGroupName : null
-      routeTableName: null
-      delegations: null
-    }
   ]
   appNsgName : '${resourceAbbreviations.networkNetworkSecurityGroups}${resourceSuffix}${resourceAbbreviations.webSitesAppServiceEnvironment}01'
   appSubnetName: '${resourceAbbreviations.networkVirtualNetworksSubnets}${resourceSuffix}${resourceAbbreviations.webSitesAppServiceEnvironment}01'
@@ -370,9 +359,5 @@ output spoke object = {
   storageAccountName : toLower(replace('${resourceAbbreviations.storageStorageAccounts}${resourceSuffix}01', '-', ''))
   storageAccountPrivateEndpointName: '${resourceAbbreviations.networkPrivateEndpoints}${resourceAbbreviations.storageStorageAccounts}${resourceSuffix}01'
   storageAccountPrivateEndpointNetworkInterfaceName: '${resourceAbbreviations.networkPrivateEndpoints}${resourceAbbreviations.storageStorageAccounts}${resourceSuffix}01-${replace(resourceAbbreviations.networkNetworkInterfaces, '-', '')}'
-  // Virtual Machine
-  virtualMachineName : 'vm-ae-inte-dev'
-  virtualMachineResourceGroupName : '${resourceAbbreviations.resourcesResourceGroups}${resourceSuffix}compute-01'
-  virtualMachineSubnetName : 'snet-compute'
 }
 

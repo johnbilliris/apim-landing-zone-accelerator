@@ -1,0 +1,13 @@
+using 'main.bicep'
+
+param workloadName = 'inte'
+
+param environment = 'dev'
+
+param location = 'australiaeast'
+
+param hubSubscriptionId = 'c8703ebc-bc5d-488d-9489-5883c9fde6c2'
+
+param spokeSubscriptionId = 'c8703ebc-bc5d-488d-9489-5883c9fde6c2'
+
+param applicationInsightsSubscriptionId = 'c8703ebc-bc5d-488d-9489-5883c9fde6c2'

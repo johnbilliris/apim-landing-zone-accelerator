@@ -1,14 +1,13 @@
 az login
 
 
-az deployment tenant create --template-file main.bicep --location australiaeast --parameters parameters.json
-az deployment sub create --template-file spoke.bicep --location australiaeast 
-az deployment sub create --template-file hub.bicep --location australiaeast 
+az deployment tenant create --template-file main.bicep --location australiaeast --parameters parameters.bicepparam
+## az deployment sub create --template-file spoke.bicep --location australiaeast 
+## az deployment sub create --template-file hub.bicep --location australiaeast 
 
 
 
 az group delete --resource-group rg-ae-connect-bastion-01 --yes
-az group delete --resource-group rg-ae-hub-apim-01 --yes
 az group delete --resource-group rg-ae-connect-apim-01 --yes
 az group delete --resource-group rg-ae-inte-dev-ase-01 --yes
 az group delete --resource-group rg-ae-inte-dev-compute-01 --yes
@@ -17,6 +16,7 @@ az group delete --resource-group rg-ae-inte-dev-network-01 --yes
 az group delete --resource-group 'rg-ae-connect-network-01' --yes
 az keyvault purge --name kv-ae-hub-nd-01
 az keyvault purge --name kv-ae-inte-dev-01
+az apim delete --resource-group rg-ae-connect-apim-01 --name apim-ae-hub-01 --yes
 az apim deletedservice purge --service-name apim-ae-hub-01 --location australiaeast
 
 

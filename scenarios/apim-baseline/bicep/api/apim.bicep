@@ -104,9 +104,6 @@ module privateDnsZone 'br/public:avm/res/network/private-dns-zone:0.7.0' = {
 
 module apim 'br/public:avm/res/api-management/service:0.12.0' = {
   name: 'apimServiceDeployment'
-  dependsOn: [
-    privateDnsZone
-  ]
   params: {
     // Required parameters
     name: apimName
