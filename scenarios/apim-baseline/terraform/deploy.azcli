@@ -1,0 +1,6 @@
+# Terraform deployment equivalent for deploy.azcli
+az login
+az account set --subscription <subscription-id>
+terraform init
+terraform plan -out tfplan
+terraform apply tfplan
